@@ -1,0 +1,3 @@
+---
+hosts_subnet: 100.98.5.1/22
+# defaults file for discover-dell-servers

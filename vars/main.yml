@@ -1,0 +1,5 @@
+---
+need_replace: "Certificate is invalid"
+idrac_user: root
+idrac_password: calvin
+# vars file for discover-dell-servers

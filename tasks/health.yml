@@ -1,0 +1,11 @@
+- name: "{{health}} health"
+  shell: "echo -e '[health-{{health}}]' >> ~/hosts"
+
+- name: based on health
+  shell: "echo '{{item.1.result.Model|replace('PowerEdge ','')}}-{{item.1.result.ServiceTag}} idracip={{item.0}} idrac_user={{idrac_user}} idrac_password={{idrac_password}}' >> ~/hosts"
+  when: item[1].failed != 'True' and item[1].result is defined and  item[1].result.Status == health 
+  ignore_errors: True
+  with_together:
+    - "{{idrac_hosts}}"
+    - '{{dell_sysinfo.results}}'
+

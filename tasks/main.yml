@@ -1,0 +1,63 @@
+---
+- name: install required packages
+  zypper:
+    name: nmap
+    state: present
+  when: "ansible_distribution == 'SLES'  and ansible_distribution_major_version == '12'"
+- name: discover all IPs
+  shell: "nmap -n -sn {{hosts_subnet}} -oG - | awk '/Up$/{print $2}' "
+  register: host_ips
+
+- name: check if its idrac ip
+  #shell: "nmap {{item}} -p 5900  | grep open" 
+  shell: "nc -z {{item}} 5900"
+  with_items:
+    - "{{host_ips.stdout.split('\n')}}"
+  register: server_idrac_ip
+  ignore_errors: yes
+
+
+- debug: msg="{{server_idrac_ip.results}}"
+
+- name: set fact related to hosts
+  set_fact:
+    idrac_hosts: "{{ idrac_hosts|default([]) + [item.item] }}"
+  when: item.failed != true
+  with_items:
+    - "{{server_idrac_ip.results}}"
+
+- name: get system detail
+  redfish:
+    category: Inventory
+    command: GetSystemInventory
+    baseuri: "{{item}}"
+  register: dell_sysinfo
+  with_items:
+    - "{{idrac_hosts}}"
+  ignore_errors: True
+
+
+
+- name: define system group
+  shell: "echo -e '[Dell-Servers]' > ~/hosts"
+
+- name: Build hosts file
+  shell: "echo '{{item.1.result.Model|replace('PowerEdge ','')}}-{{item.1.result.ServiceTag}} idracip={{item.0}} idrac_user={{idrac_user}} idrac_password={{idrac_password}}' >> ~/hosts"
+  with_together:
+    - "{{idrac_hosts}}"
+    - "{{dell_sysinfo.results}}"
+  when: item.1.result is defined 
+  ignore_errors: True
+
+- include: health.yml health={{prabhakar}}
+  with_items:
+    - "Critical"
+    - "OK"
+    - "Warning"
+  loop_control:
+    loop_var: prabhakar
+
+- debug: msg="{{dell_sysinfo}}"
+
+
+
