@@ -49,7 +49,7 @@
   when: item.1.result is defined 
   ignore_errors: True
 
-- import_tasks: health.yml health={{prabhakar}}
+- include_tasks: health.yml health={{prabhakar}}
   with_items:
     - "Critical"
     - "OK"
